@@ -51,17 +51,21 @@ $('#resetBtn').onclick=()=>{if(confirm('Effacer définitivement toutes les donn�
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
 function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
+function isAndroid(){return /android/i.test(navigator.userAgent)}
+function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
 function openInstallDialog(){
- const ios=isIOS();
+ const ios=isIOS(), android=isAndroid();
  $('#iosInstallHelp').classList.toggle('hidden',!ios);
- $('#installNativeHelp').classList.toggle('hidden',ios);
- $('#nativeInstallBtn').classList.toggle('hidden',ios||!deferredPrompt);
+ $('#androidInstallHelp').classList.toggle('hidden',!android);
+ $('#installNativeHelp').classList.toggle('hidden',ios||android);
+ $('#nativeInstallBtn').classList.toggle('hidden',ios||(!deferredPrompt&&!android));
  $('#installDialog').showModal();
 }
 $('#installBtn').onclick=openInstallDialog;
 $('#nativeInstallBtn').onclick=async()=>{if(!deferredPrompt){openInstallDialog();return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installDialog').close()};
 window.addEventListener('appinstalled',()=>{$('#installBtn').classList.add('hidden')});
-if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+if(isStandalone())$('#installBtn').classList.add('hidden');
+if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(r=>r.update()).catch(()=>{});
 
 // PLAN INTERACTIF
 function exposureIcon(v){return v==='Ombre'?'🌳':v==='Mi-ombre'?'⛅':'☀️'}
@@ -79,14 +83,19 @@ function fitGardenPlan(){
  const plan=$('#gardenPlan');
  if(!plan)return;
  const gw=Math.max(2,+state.settings.gardenWidth||12), gh=Math.max(2,+state.settings.gardenHeight||8);
- const available=Math.max(280,plan.parentElement?.clientWidth||window.innerWidth-32);
- const natural=available*(gh/gw);
- const minH=window.innerWidth<=430?300:340;
- const maxH=Math.min(window.innerHeight*0.68,700);
- plan.style.width='100%';
+ const wrap=plan.closest('.garden-wrap');
+ const viewportW=window.visualViewport?.width||document.documentElement.clientWidth||window.innerWidth;
+ const containerW=Math.max(220,Math.min(wrap?.clientWidth||viewportW-20,viewportW-20));
+ const natural=containerW*(gh/gw);
+ const viewportH=window.visualViewport?.height||window.innerHeight;
+ const minH=viewportW<=390?220:viewportW<=700?260:320;
+ const maxH=Math.max(minH,Math.min(viewportH*.62,700));
+ plan.style.width=containerW+'px';
+ plan.style.maxWidth='100%';
  plan.style.minWidth='0';
  plan.style.height=Math.max(minH,Math.min(maxH,natural))+'px';
 }
+
 function renderPlan(){
  const plan=$('#gardenPlan'); if(!plan)return; refreshPlanControls(); fitGardenPlan();
  const year=String(state.settings.planYear||new Date().getFullYear()); const plots=state.plots.filter(p=>String(p.year)===year);
@@ -195,5 +204,7 @@ function openQuickHarvest(){
  $('#logDialog h3').textContent='Ajouter une récolte';$('#logDialog').showModal();
 }
 window.addEventListener('resize',fitGardenPlan);
+window.addEventListener('orientationchange',()=>setTimeout(fitGardenPlan,150));
+window.visualViewport?.addEventListener('resize',fitGardenPlan);
 if('ResizeObserver' in window){new ResizeObserver(fitGardenPlan).observe($('#gardenPlan').parentElement)}
 renderAll();

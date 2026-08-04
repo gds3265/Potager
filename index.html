@@ -4,16 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#e98b2a" />
-  <title>Mon Potager V3.1</title>
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Mon Potager" />
+  <title>Mon Potager V3.4</title>
+  <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./styles.css?v=3.4" />
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">Carnet de jardin amateur</div>
-      <h1><img src="icons/icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.1</small></h1>
+      <h1><img src="icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.4</small></h1>
     </div>
     <button id="installBtn" class="ghost install-main">📲 Installer</button>
   </header>
@@ -212,7 +219,7 @@
   <dialog id="installDialog">
     <div class="install-sheet">
       <div class="modal-head"><h3>Installer Mon Potager</h3><button type="button" class="icon dialog-close" aria-label="Fermer">✕</button></div>
-      <div class="install-logo-wrap"><img src="icons/icon-192.png" alt="Icône Mon Potager" class="install-logo"></div>
+      <div class="install-logo-wrap"><img src="icon-192.png" alt="Icône Mon Potager" class="install-logo"></div>
       <div id="installNativeHelp">
         <p>Installe l’application pour l’ouvrir comme une vraie application, avec son icône sur l’écran d’accueil.</p>
       </div>
@@ -220,9 +227,13 @@
         <p><b>Sur iPhone ou iPad :</b></p>
         <ol><li>Ouvre cette page dans <b>Safari</b>.</li><li>Appuie sur le bouton <b>Partager</b> ⎙.</li><li>Choisis <b>Sur l’écran d’accueil</b>, puis <b>Ajouter</b>.</li></ol>
       </div>
+      <div id="androidInstallHelp" class="hidden">
+        <p><b>Sur Android :</b></p>
+        <ol><li>Ouvre cette page dans <b>Chrome</b>.</li><li>Appuie sur <b>Installer maintenant</b> ou sur le menu ⋮.</li><li>Choisis <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</li></ol>
+      </div>
       <div class="modal-actions"><button type="button" class="secondary dialog-cancel">Fermer</button><button type="button" id="nativeInstallBtn" class="primary">Installer maintenant</button></div>
     </div>
   </dialog>
-  <script src="app.js"></script>
+  <script src="./app.js?v=3.4"></script>
 </body>
 </html>

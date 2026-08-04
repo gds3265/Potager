@@ -4,3 +4,32 @@
 
 .version{font-size:.7rem;background:#fff4cf;color:#8a5010;padding:4px 7px;border-radius:999px;vertical-align:middle}.smart-card{border-color:#efc669}.smart-alert{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:12px;margin-top:9px;border-radius:14px;border-left:5px solid #d59a2e;background:#fff7d9}.smart-alert>span{font-size:1.35rem}.smart-alert p{margin:3px 0 0;color:var(--muted);font-size:.9rem}.smart-alert.info{border-left-color:#4d91b8;background:#edf8ff}.smart-alert.warn{border-left-color:#e3942f;background:#fff4dc}.smart-alert.danger{border-left-color:#c84e3d;background:#fff0ed}.smart-ok{padding:13px;border-radius:14px;background:#edf8e7;color:#496b31;font-weight:700}.companion{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px;margin-top:9px;border-radius:14px}.companion.good{background:#eef8e8;border:1px solid #b9d8aa}.companion.bad{background:#fff0ed;border:1px solid #efbbb2}.companion span{color:var(--muted);text-align:right}@media(max-width:600px){.companion{display:block}.companion span{display:block;text-align:left;margin-top:4px}}
 .app-logo{width:46px;height:46px;border-radius:13px;vertical-align:middle;box-shadow:0 4px 12px rgba(75,45,10,.18);margin-right:7px}.install-main{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:#fff;color:#7c4a10;border:1px solid rgba(124,74,16,.16);box-shadow:0 5px 15px rgba(93,53,9,.12)}.quick-stat{position:relative;padding-right:50px}.quick-plus{position:absolute;right:12px;top:50%;transform:translateY(-50%);width:36px;height:36px;border:0;border-radius:50%;background:var(--orange);color:#fff;font-size:1.55rem;line-height:1;font-weight:800;box-shadow:0 5px 12px rgba(185,92,13,.25);cursor:pointer}.quick-plus:active{transform:translateY(-50%) scale(.94)}.install-sheet{padding:20px}.install-logo-wrap{text-align:center;margin:8px 0 14px}.install-logo{width:112px;height:112px;border-radius:28px;box-shadow:0 10px 28px rgba(80,54,23,.2)}.install-sheet ol{padding-left:22px}.install-sheet li{margin:9px 0}.dialog-close{cursor:pointer;flex:0 0 auto}.dialog-cancel{cursor:pointer}@media(max-width:600px){.topbar{gap:10px}.topbar h1{font-size:1.35rem}.app-logo{width:38px;height:38px;border-radius:11px}.install-main{padding:9px 10px;font-size:.85rem}.quick-stat{padding-right:44px}.quick-plus{right:9px;width:32px;height:32px;font-size:1.35rem}dialog{max-height:calc(100dvh - 20px);overflow:auto}dialog form,.install-sheet{padding:16px}.modal-actions{position:sticky;bottom:-16px;background:#fff;padding:12px 0 2px;z-index:2}}
+
+/* V3.3 — adaptation automatique téléphone, tablette et ordinateur */
+html{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{width:100%;max-width:100%;overflow-x:hidden}
+*,*::before,*::after{box-sizing:border-box;min-width:0}
+img,svg,canvas,video{max-width:100%;height:auto}
+main,.view,.card,.stats,.grid2,.cards,.section-head,.section-title,.timeline,.garden-wrap,.plan-tools{width:100%;max-width:100%}
+input,select,textarea,button{max-width:100%}
+.topbar>div{min-width:0}.topbar h1{display:flex;align-items:center;flex-wrap:wrap;line-height:1.12}
+.tabs{width:100%;max-width:100%;scrollbar-width:none;-webkit-overflow-scrolling:touch}.tabs::-webkit-scrollbar{display:none}
+.hero>div:first-child{min-width:0}.hero h2,.hero p,.stat,.crop-card,.timeline-item,.smart-alert{overflow-wrap:anywhere}
+dialog{max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);margin:auto;overflow:hidden}
+dialog form,.install-sheet{max-height:calc(100dvh - 16px);overflow-y:auto;overscroll-behavior:contain}
+.garden-wrap{contain:inline-size}.garden-plan{max-width:100%!important;min-width:0!important}
+.yield-row>*{min-width:0;overflow-wrap:anywhere}
+@media(max-width:700px){
+  .topbar{padding:12px;align-items:center}.eyebrow{display:none}.topbar h1{font-size:clamp(1.05rem,5vw,1.4rem);margin:0}.app-logo{width:36px;height:36px}.install-main{font-size:.8rem;padding:8px 9px}
+  main{padding:14px 10px calc(30px + env(safe-area-inset-bottom))}.card{padding:14px;border-radius:18px}.hero{gap:8px}.sun{font-size:2.6rem;flex:0 0 auto}
+  .section-head{flex-wrap:wrap}.section-head>div{flex:1 1 180px}.section-head>.primary{flex:0 1 auto}
+  .filters{display:grid;grid-template-columns:1fr}.filters select{max-width:none}
+  .plan-tools{grid-template-columns:1fr}.plan-tools .secondary{grid-column:auto}
+  .modal-actions{flex-wrap:wrap}.modal-actions button{flex:1 1 120px}
+}
+@media(max-width:390px){
+  .topbar{gap:6px}.install-main{padding:7px 8px}.install-main{font-size:0}.install-main::after{content:'Installer';font-size:.76rem}.app-logo{width:32px;height:32px}
+  .stats{grid-template-columns:1fr 1fr}.stat{padding:10px}.stat b{font-size:1.18rem}.stat span:last-child{font-size:.76rem}
+  .hero .sun{display:none}.hero h2{font-size:1.35rem}
+  .yield-row{grid-template-columns:1fr .7fr .7fr;font-size:.86rem}
+}

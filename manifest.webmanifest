@@ -1,1 +1,14 @@
-{"name":"Mon Potager V3","short_name":"Potager V3","start_url":"./","display":"standalone","background_color":"#fff8e8","theme_color":"#e98b2a"}
+{
+  "name": "Mon Potager V3.2",
+  "short_name": "Mon Potager",
+  "description": "Carnet de potager : cultures, plan, pluie, arrosage et récoltes.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8e8",
+  "theme_color": "#e98b2a",
+  "icons": [
+    {"src":"icons/icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
+  ]
+}

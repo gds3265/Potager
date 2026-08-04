@@ -16,7 +16,12 @@ function renderStats(){
  const totalYield=state.logs.filter(l=>l.type==='Récolte').reduce((s,l)=>s+(+l.weight||0),0);
  const month=new Date().toISOString().slice(0,7);const rain=state.water.filter(w=>w.type==='Pluie'&&w.date.startsWith(month)).reduce((s,w)=>s+(+w.amount||0),0);
  const irrigation=state.water.filter(w=>w.type==='Arrosage'&&w.date.startsWith(month)).reduce((s,w)=>s+(+w.amount||0),0);
- $('#stats').innerHTML=[['🌱',state.crops.filter(c=>c.status!=='Terminé').length,'Cultures actives'],['🧺',totalYield.toFixed(1)+' kg','Récolté au total'],['🌧️',rain.toFixed(1)+' mm','Pluie ce mois'],['💧',irrigation.toFixed(1)+' mm','Arrosage ce mois']].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b><span>${x[2]}</span></div>`).join('');
+ $('#stats').innerHTML=[
+   {icon:'🌱',value:state.crops.filter(c=>c.status!=='Terminé').length,label:'Cultures actives'},
+   {icon:'🧺',value:totalYield.toFixed(1)+' kg',label:'Récolté au total',quick:'harvest',title:'Ajouter une récolte'},
+   {icon:'🌧️',value:rain.toFixed(1)+' mm',label:'Pluie ce mois',quick:'rain',title:'Ajouter une pluie'},
+   {icon:'💧',value:irrigation.toFixed(1)+' mm',label:'Arrosage ce mois',quick:'watering',title:'Ajouter un arrosage'}
+ ].map(x=>`<div class="stat quick-stat"><span>${x.icon}</span><b>${x.value}</b><span>${x.label}</span>${x.quick?`<button type="button" class="quick-plus" data-quick="${x.quick}" aria-label="${x.title}" title="${x.title}">+</button>`:''}</div>`).join('');
  const upcoming=[...state.crops].filter(c=>c.status!=='Terminé').sort((a,b)=>(a.expected||'9999').localeCompare(b.expected||'9999')).slice(0,5);
  $('#upcoming').classList.toggle('empty',!upcoming.length);$('#upcoming').innerHTML=upcoming.length?upcoming.map(c=>`<div class="list-item"><b>${esc(c.name)} ${c.variety?'- '+esc(c.variety):''}</b><span class="meta">${esc(c.status)}${c.expected?' • récolte vers le '+fmt(c.expected):''}</span></div>`).join(''):'Aucune culture enregistrée.';
  const all=[...state.logs.map(x=>({...x,kind:'log'})),...state.water.map(x=>({...x,kind:'water'}))].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
@@ -44,7 +49,18 @@ $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],
 $('#importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!data.crops||!data.logs||!data.water)throw Error();state=data;save();alert('Sauvegarde importée.')}catch{alert('Fichier de sauvegarde non valide.')}e.target.value=''};
 $('#resetBtn').onclick=()=>{if(confirm('Effacer définitivement toutes les données de ce potager ?')){state=normalize({});save()}};
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden')});$('#installBtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').classList.add('hidden')};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
+function openInstallDialog(){
+ const ios=isIOS();
+ $('#iosInstallHelp').classList.toggle('hidden',!ios);
+ $('#installNativeHelp').classList.toggle('hidden',ios);
+ $('#nativeInstallBtn').classList.toggle('hidden',ios||!deferredPrompt);
+ $('#installDialog').showModal();
+}
+$('#installBtn').onclick=openInstallDialog;
+$('#nativeInstallBtn').onclick=async()=>{if(!deferredPrompt){openInstallDialog();return}deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installDialog').close()};
+window.addEventListener('appinstalled',()=>{$('#installBtn').classList.add('hidden')});
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
 // PLAN INTERACTIF
@@ -59,8 +75,20 @@ function refreshPlanControls(){
  const cropSel=$('#plotCrop'); const keep=cropSel.value;
  cropSel.innerHTML='<option value="">Aucune culture</option>'+state.crops.map(c=>`<option value="${c.id}">${esc(c.name)}${c.variety?' — '+esc(c.variety):''}</option>`).join(''); cropSel.value=keep;
 }
+function fitGardenPlan(){
+ const plan=$('#gardenPlan');
+ if(!plan)return;
+ const gw=Math.max(2,+state.settings.gardenWidth||12), gh=Math.max(2,+state.settings.gardenHeight||8);
+ const available=Math.max(280,plan.parentElement?.clientWidth||window.innerWidth-32);
+ const natural=available*(gh/gw);
+ const minH=window.innerWidth<=430?300:340;
+ const maxH=Math.min(window.innerHeight*0.68,700);
+ plan.style.width='100%';
+ plan.style.minWidth='0';
+ plan.style.height=Math.max(minH,Math.min(maxH,natural))+'px';
+}
 function renderPlan(){
- const plan=$('#gardenPlan'); if(!plan)return; refreshPlanControls();
+ const plan=$('#gardenPlan'); if(!plan)return; refreshPlanControls(); fitGardenPlan();
  const year=String(state.settings.planYear||new Date().getFullYear()); const plots=state.plots.filter(p=>String(p.year)===year);
  if(!plots.length){plan.innerHTML='<div class="plan-empty">Ajoute une première parcelle ou un équipement.</div>';return}
  plan.innerHTML=plots.map(p=>{const crop=state.crops.find(c=>c.id===p.cropId);return `<div class="plot" data-id="${p.id}" data-type="${esc(p.type)}" data-sun="${esc(p.sun)}" style="left:${p.x}%;top:${p.y}%;width:${p.w}%;height:${p.h}%"><b>${typeIcon(p.type)} ${esc(p.name)}</b><small>${crop?esc(crop.name):esc(p.type)} • ${exposureIcon(p.sun)}</small></div>`}).join('');
@@ -138,4 +166,34 @@ function rectGap(a,b){const ax2=a.x+a.w,ay2=a.y+a.h,bx2=b.x+b.w,by2=b.y+b.h;cons
 function companionPairs(){const year=String(state.settings.planYear||new Date().getFullYear()),plots=state.plots.filter(p=>String(p.year)===year&&p.cropId);const out=[];for(let i=0;i<plots.length;i++)for(let j=i+1;j<plots.length;j++){if(rectGap(plots[i],plots[j])>7)continue;const ca=state.crops.find(c=>c.id===plots[i].cropId),cb=state.crops.find(c=>c.id===plots[j].cropId);if(!ca||!cb)continue;const a=kbFor(ca.name),b=kbFor(cb.name);if(!a||!b)continue;const good=a.good.map(normCrop).includes(normCrop(b.key))||b.good.map(normCrop).includes(normCrop(a.key));const bad=a.bad.map(normCrop).includes(normCrop(b.key))||b.bad.map(normCrop).includes(normCrop(a.key));if(good||bad)out.push({good:good&&!bad,a:ca.name,b:cb.name,pa:plots[i].name,pb:plots[j].name})}return out}
 function renderCompanionship(){const box=$('#companionshipResults');if(!box)return;const pairs=companionPairs();box.innerHTML=pairs.length?pairs.map(x=>`<div class="companion ${x.good?'good':'bad'}"><b>${x.good?'🟢 Bonne association':'🔴 Association à éviter'}</b><span>${esc(x.a)} (${esc(x.pa)}) + ${esc(x.b)} (${esc(x.pb)})</span></div>`).join(''):'<p class="empty">Place au moins deux cultures reconnues dans des zones proches pour analyser leur compagnonnage.</p>'}
 
+
+
+// Fermeture fiable des formulaires, y compris sur iPhone.
+document.addEventListener('click',e=>{
+ const close=e.target.closest('.dialog-close,.dialog-cancel');
+ if(close){const dlg=close.closest('dialog');if(dlg?.open)dlg.close();return}
+ const quick=e.target.closest('[data-quick]');
+ if(quick){
+   const action=quick.dataset.quick;
+   if(action==='harvest') openQuickHarvest();
+   if(action==='rain') openQuickWater('Pluie');
+   if(action==='watering') openQuickWater('Arrosage');
+ }
+});
+$$('dialog').forEach(dlg=>{
+ dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+ dlg.addEventListener('cancel',e=>{e.preventDefault();dlg.close()});
+});
+function openQuickWater(type){
+ $('#waterForm').reset();$('#waterDate').value=isoToday();$('#waterType').value=type;
+ $('#waterDialog h3').textContent=type==='Pluie'?'Ajouter une pluie':'Ajouter un arrosage';
+ $('#waterDialog').showModal();
+}
+function openQuickHarvest(){
+ if(!state.crops.length){alert('Crée d’abord une culture avant d’enregistrer une récolte.');switchView('cultures');return}
+ $('#logForm').reset();$('#logDate').value=isoToday();$('#logType').value='Récolte';toggleLogFields();
+ $('#logDialog h3').textContent='Ajouter une récolte';$('#logDialog').showModal();
+}
+window.addEventListener('resize',fitGardenPlan);
+if('ResizeObserver' in window){new ResizeObserver(fitGardenPlan).observe($('#gardenPlan').parentElement)}
 renderAll();

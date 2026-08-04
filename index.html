@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#e98b2a" />
-  <title>Mon Potager</title>
+  <title>Mon Potager V3</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -12,7 +12,7 @@
   <header class="topbar">
     <div>
       <div class="eyebrow">Carnet de jardin amateur</div>
-      <h1>🌻 Mon Potager</h1>
+      <h1>🌻 Mon Potager <small class="version">V3</small></h1>
     </div>
     <button id="installBtn" class="ghost hidden">Installer</button>
   </header>
@@ -38,6 +38,11 @@
       </div>
 
       <div class="stats" id="stats"></div>
+
+      <div class="card smart-card">
+        <div class="section-title"><h3>🔔 Alertes du potager</h3><span class="badge">Assistant V3</span></div>
+        <div id="smartAlerts"></div>
+      </div>
 
       <div class="grid2">
         <div class="card">
@@ -66,6 +71,11 @@
       <p class="plan-help">Déplace les zones avec le doigt ou la souris. Appuie sur une zone pour la modifier ou lui affecter une culture.</p>
       <div class="garden-wrap"><div id="gardenPlan" class="garden-plan" aria-label="Plan interactif du potager"></div></div>
       <div class="legend card"><b>Légende :</b><span>☀️ Soleil</span><span>⛅ Mi-ombre</span><span>🌳 Ombre</span><span>💧 Point d’eau</span><span>🟫 Allée</span></div>
+      <div class="card">
+        <div class="section-title"><h3>🤝 Analyse du compagnonnage</h3><span class="badge">Zones proches</span></div>
+        <p class="meta">L’application compare automatiquement les cultures placées dans des parcelles voisines.</p>
+        <div id="companionshipResults"></div>
+      </div>
     </section>
 
     <section id="cultures" class="view">

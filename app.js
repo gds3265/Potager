@@ -1,8 +1,8 @@
-const KEY='mon-potager-v2';
+const KEY='mon-potager-v3';
 let state=load();
 let deferredPrompt;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-function load(){try{const old=JSON.parse(localStorage.getItem(KEY))||JSON.parse(localStorage.getItem('mon-potager-v1'));return normalize(old)}catch{return normalize({})}}
+function load(){try{const old=JSON.parse(localStorage.getItem(KEY))||JSON.parse(localStorage.getItem('mon-potager-v2'))||JSON.parse(localStorage.getItem('mon-potager-v1'));return normalize(old)}catch{return normalize({})}}
 function normalize(x){return {crops:x?.crops||[],logs:x?.logs||[],water:x?.water||[],plots:x?.plots||[],settings:x?.settings||{gardenWidth:12,gardenHeight:8,planYear:new Date().getFullYear()}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
@@ -11,7 +11,7 @@ function fmt(d){if(!d)return'—';return new Date(d+'T12:00:00').toLocaleDateStr
 function cropName(id){return state.crops.find(c=>c.id===id)?.name||'Culture supprimée'}
 function switchView(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'})}
 $$('.tab').forEach(t=>t.onclick=()=>switchView(t.dataset.view));$$('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
-function renderAll(){renderStats();renderCrops();renderLogs();renderWater();renderYield();refreshSelects();renderPlan();}
+function renderAll(){renderStats();renderCrops();renderLogs();renderWater();renderYield();refreshSelects();renderPlan();renderAlerts();renderCompanionship();}
 function renderStats(){
  const totalYield=state.logs.filter(l=>l.type==='Récolte').reduce((s,l)=>s+(+l.weight||0),0);
  const month=new Date().toISOString().slice(0,7);const rain=state.water.filter(w=>w.type==='Pluie'&&w.date.startsWith(month)).reduce((s,w)=>s+(+w.amount||0),0);
@@ -46,8 +46,6 @@ $('#resetBtn').onclick=()=>{if(confirm('Effacer définitivement toutes les donn�
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;$('#installBtn').classList.remove('hidden')});$('#installBtn').onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$('#installBtn').classList.add('hidden')};
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-renderAll();
-
 
 // PLAN INTERACTIF
 function exposureIcon(v){return v==='Ombre'?'🌳':v==='Mi-ombre'?'⛅':'☀️'}
@@ -84,3 +82,60 @@ $('#plotForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')re
 $('#deletePlot').onclick=()=>{const id=$('#plotId').value;if(id&&confirm('Supprimer cette zone du plan ?')){state.plots=state.plots.filter(p=>p.id!==id);$('#plotDialog').close();save()}};
 $('#planYear').onchange=e=>{state.settings.planYear=+e.target.value;save()};
 $('#applyPlanSize').onclick=()=>{state.settings.gardenWidth=Math.max(2,+$('#gardenWidth').value||12);state.settings.gardenHeight=Math.max(2,+$('#gardenHeight').value||8);save()};
+
+
+// ASSISTANT POTAGER V3 : ALERTES, COMPAGNONNAGE ET ROTATION
+const CROP_KB={
+ tomate:{family:'Solanacées',water:3,days:4,good:['basilic','carotte','oignon','persil','salade','oeillet'],bad:['pomme de terre','fenouil','chou']},
+ 'pomme de terre':{family:'Solanacées',water:2,days:5,good:['haricot','pois','chou','souci'],bad:['tomate','courgette','concombre']},
+ poivron:{family:'Solanacées',water:3,days:4,good:['basilic','oignon','carotte'],bad:['fenouil']},
+ aubergine:{family:'Solanacées',water:3,days:4,good:['haricot','basilic','souci'],bad:['fenouil']},
+ carotte:{family:'Apiacées',water:2,days:5,good:['poireau','oignon','tomate','salade','pois'],bad:['aneth']},
+ poireau:{family:'Amaryllidacées',water:2,days:6,good:['carotte','céleri','fraise','tomate'],bad:['haricot','pois']},
+ oignon:{family:'Amaryllidacées',water:1,days:7,good:['carotte','tomate','betterave','fraise','salade'],bad:['haricot','pois']},
+ ail:{family:'Amaryllidacées',water:1,days:8,good:['fraise','tomate','carotte'],bad:['haricot','pois']},
+ haricot:{family:'Fabacées',water:2,days:5,good:['carotte','chou','courgette','fraise','pomme de terre'],bad:['oignon','ail','poireau','fenouil']},
+ pois:{family:'Fabacées',water:2,days:5,good:['carotte','radis','concombre','chou'],bad:['oignon','ail','poireau']},
+ courgette:{family:'Cucurbitacées',water:3,days:3,good:['haricot','mais','capucine','radis'],bad:['pomme de terre']},
+ concombre:{family:'Cucurbitacées',water:3,days:3,good:['haricot','pois','radis','tournesol'],bad:['pomme de terre','sauge']},
+ courge:{family:'Cucurbitacées',water:3,days:4,good:['haricot','mais','capucine'],bad:['pomme de terre']},
+ melon:{family:'Cucurbitacées',water:2,days:4,good:['mais','tournesol'],bad:['pomme de terre']},
+ salade:{family:'Astéracées',water:2,days:4,good:['carotte','radis','fraise','oignon','tomate'],bad:['persil']},
+ laitue:{family:'Astéracées',water:2,days:4,good:['carotte','radis','fraise','oignon','tomate'],bad:['persil']},
+ chou:{family:'Brassicacées',water:2,days:5,good:['céleri','betterave','haricot','oignon','romarin'],bad:['tomate','fraise']},
+ radis:{family:'Brassicacées',water:2,days:4,good:['carotte','salade','pois','concombre'],bad:[]},
+ navet:{family:'Brassicacées',water:2,days:5,good:['pois','salade'],bad:[]},
+ betterave:{family:'Amaranthacées',water:2,days:5,good:['oignon','chou','salade'],bad:['haricot']},
+ épinard:{family:'Amaranthacées',water:2,days:5,good:['fraise','pois','radis'],bad:[]},
+ fraise:{family:'Rosacées',water:2,days:5,good:['ail','oignon','poireau','salade','épinard'],bad:['chou']},
+ basilic:{family:'Lamiacées',water:2,days:4,good:['tomate','poivron','aubergine'],bad:['sauge']},
+ persil:{family:'Apiacées',water:2,days:5,good:['tomate','asperge'],bad:['salade']},
+ mais:{family:'Poacées',water:3,days:4,good:['haricot','courge','concombre'],bad:['tomate']},
+ céleri:{family:'Apiacées',water:3,days:3,good:['poireau','tomate','chou'],bad:['carotte','persil']}
+};
+function normCrop(v=''){return v.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/s$/,'').trim()}
+function kbFor(name){const n=normCrop(name);const key=Object.keys(CROP_KB).find(k=>normCrop(k)===n||n.includes(normCrop(k))||normCrop(k).includes(n));return key?{key,...CROP_KB[key]}:null}
+function daysSince(date){if(!date)return 999;return Math.floor((new Date(isoToday()+'T12:00:00')-new Date(date+'T12:00:00'))/86400000)}
+function latestWaterDate(){const arr=state.water.filter(w=>+w.amount>0).sort((a,b)=>b.date.localeCompare(a.date));return arr[0]?.date||''}
+function buildAlerts(){
+ const alerts=[], today=isoToday(), lastWater=latestWaterDate();
+ state.crops.filter(c=>c.status!=='Terminé').forEach(c=>{
+   const kb=kbFor(c.name);
+   if(c.expected){const d=Math.ceil((new Date(c.expected+'T12:00:00')-new Date(today+'T12:00:00'))/86400000);if(d>=0&&d<=7)alerts.push({level:'info',icon:'🧺',title:`Récolte proche : ${c.name}`,text:d===0?'Récolte prévue aujourd’hui.':`Récolte prévue dans ${d} jour(s), le ${fmt(c.expected)}.`});if(d<0&&d>-15)alerts.push({level:'warn',icon:'🧺',title:`Récolte à vérifier : ${c.name}`,text:`La date prévue était le ${fmt(c.expected)}.`})}
+   if(kb&&kb.water>=2&&daysSince(lastWater)>kb.days)alerts.push({level:'warn',icon:'💧',title:`Arrosage à vérifier : ${c.name}`,text:`Aucune pluie ni aucun arrosage saisi depuis ${daysSince(lastWater)} jour(s). Besoin en eau : ${kb.water===3?'élevé':'modéré'}.`});
+   if(c.sow&&c.status==='Prévu'&&daysSince(c.sow)>=0)alerts.push({level:'info',icon:'🌱',title:`Semis prévu : ${c.name}`,text:`Date prévue : ${fmt(c.sow)}.`});
+   if(c.plant&&['Prévu','Semé'].includes(c.status)&&daysSince(c.plant)>=0)alerts.push({level:'info',icon:'🪴',title:`Plantation prévue : ${c.name}`,text:`Date prévue : ${fmt(c.plant)}.`});
+ });
+ const year=+(state.settings.planYear||new Date().getFullYear());
+ state.plots.filter(p=>+p.year===year&&p.cropId).forEach(p=>{
+   const cur=state.crops.find(c=>c.id===p.cropId), prev=state.plots.find(q=>+q.year===year-1&&q.name.trim().toLowerCase()===p.name.trim().toLowerCase()&&q.cropId);
+   if(cur&&prev){const old=state.crops.find(c=>c.id===prev.cropId), a=kbFor(cur.name),b=old&&kbFor(old.name);if(a&&b&&a.family===b.family)alerts.push({level:'danger',icon:'🔄',title:`Rotation à revoir : ${p.name}`,text:`${cur.name} succède à ${old.name} : même famille (${a.family}). Une autre famille est préférable.`})}
+ });
+ return alerts.slice(0,12)
+}
+function renderAlerts(){const box=$('#smartAlerts');if(!box)return;const alerts=buildAlerts();box.innerHTML=alerts.length?alerts.map(a=>`<div class="smart-alert ${a.level}"><span>${a.icon}</span><div><b>${esc(a.title)}</b><p>${esc(a.text)}</p></div></div>`).join(''):'<div class="smart-ok">✅ Aucune alerte particulière avec les données saisies.</div>'}
+function rectGap(a,b){const ax2=a.x+a.w,ay2=a.y+a.h,bx2=b.x+b.w,by2=b.y+b.h;const dx=Math.max(b.x-ax2,a.x-bx2,0),dy=Math.max(b.y-ay2,a.y-by2,0);return Math.hypot(dx,dy)}
+function companionPairs(){const year=String(state.settings.planYear||new Date().getFullYear()),plots=state.plots.filter(p=>String(p.year)===year&&p.cropId);const out=[];for(let i=0;i<plots.length;i++)for(let j=i+1;j<plots.length;j++){if(rectGap(plots[i],plots[j])>7)continue;const ca=state.crops.find(c=>c.id===plots[i].cropId),cb=state.crops.find(c=>c.id===plots[j].cropId);if(!ca||!cb)continue;const a=kbFor(ca.name),b=kbFor(cb.name);if(!a||!b)continue;const good=a.good.map(normCrop).includes(normCrop(b.key))||b.good.map(normCrop).includes(normCrop(a.key));const bad=a.bad.map(normCrop).includes(normCrop(b.key))||b.bad.map(normCrop).includes(normCrop(a.key));if(good||bad)out.push({good:good&&!bad,a:ca.name,b:cb.name,pa:plots[i].name,pb:plots[j].name})}return out}
+function renderCompanionship(){const box=$('#companionshipResults');if(!box)return;const pairs=companionPairs();box.innerHTML=pairs.length?pairs.map(x=>`<div class="companion ${x.good?'good':'bad'}"><b>${x.good?'🟢 Bonne association':'🔴 Association à éviter'}</b><span>${esc(x.a)} (${esc(x.pa)}) + ${esc(x.b)} (${esc(x.pb)})</span></div>`).join(''):'<p class="empty">Place au moins deux cultures reconnues dans des zones proches pour analyser leur compagnonnage.</p>'}
+
+renderAll();

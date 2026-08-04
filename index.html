@@ -8,19 +8,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mon Potager" />
-  <title>Mon Potager V3.4</title>
+  <title>Mon Potager V3.5</title>
   <link rel="icon" href="./favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=3.4" />
+  <link rel="stylesheet" href="./styles.css?v=3.5" />
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">Carnet de jardin amateur</div>
-      <h1><img src="icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.4</small></h1>
+      <h1><img src="icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.5</small></h1>
     </div>
     <button id="installBtn" class="ghost install-main">📲 Installer</button>
   </header>
@@ -29,6 +29,7 @@
     <button class="tab active" data-view="dashboard">Accueil</button>
     <button class="tab" data-view="plan">Plan du potager</button>
     <button class="tab" data-view="cultures">Cultures</button>
+    <button class="tab" data-view="seeds">Graines</button>
     <button class="tab" data-view="journal">Journal</button>
     <button class="tab" data-view="meteo">Eau & pluie</button>
     <button class="tab" data-view="bilan">Bilan</button>
@@ -92,6 +93,32 @@
         <button class="primary" id="openCrop">+ Nouvelle culture</button>
       </div>
       <div id="cropCards" class="cards"></div>
+    </section>
+
+
+    <section id="seeds" class="view">
+      <div class="section-head">
+        <div><span class="badge">Semences disponibles</span><h2>Stock de graines</h2></div>
+        <button class="primary" id="openSeed">+ Ajouter un sachet</button>
+      </div>
+      <div class="card seed-settings">
+        <label>Zone climatique
+          <select id="climateZone">
+            <option value="southwest">Sud-Ouest / climat doux</option>
+            <option value="temperate">France tempérée</option>
+            <option value="mountain">Montagne / climat frais</option>
+            <option value="mediterranean">Méditerranéen</option>
+          </select>
+        </label>
+        <p class="meta">Les périodes sont des repères indicatifs à adapter à la météo locale, à l'altitude et aux indications du sachet.</p>
+      </div>
+      <div class="seed-summary" id="seedSummary"></div>
+      <div class="card">
+        <div class="section-title"><h3>🌱 Ce qui peut être semé</h3><span class="badge" id="seedMonthBadge"></span></div>
+        <div id="seedNow"></div>
+      </div>
+      <div class="section-title seed-list-title"><h3>Mes sachets</h3><select id="seedFilter"><option value="">Tous les sachets</option><option value="now">À semer maintenant</option><option value="soon">Bientôt</option><option value="low">Stock faible ou vide</option><option value="old">À vérifier</option></select></div>
+      <div id="seedCards" class="cards"></div>
     </section>
 
     <section id="journal" class="view">
@@ -166,6 +193,10 @@
         <label>Type<select id="logType" required><option>Semis</option><option>Plantation</option><option>Récolte</option><option>Traitement</option><option>Observation</option></select></label>
         <label>Date<input id="logDate" type="date" required /></label>
       </div>
+      <div id="sowingFields" class="grid2 compact hidden">
+        <label>Sachet utilisé<select id="logSeed"><option value="">Non précisé</option></select></label>
+        <label>Quantité retirée du stock<input id="logSeedQty" type="number" min="0" step="0.1" value="1" /></label>
+      </div>
       <div id="harvestFields" class="grid2 compact hidden">
         <label>Poids récolté (kg)<input id="logWeight" type="number" min="0" step="0.01" /></label>
         <label>Quantité récoltée<input id="logCount" type="number" min="0" step="1" /></label>
@@ -216,6 +247,34 @@
   </dialog>
 
 
+
+  <dialog id="seedDialog">
+    <form method="dialog" id="seedForm">
+      <div class="modal-head"><h3>Ajouter des graines</h3><button type="button" class="icon dialog-close" aria-label="Fermer">✕</button></div>
+      <input type="hidden" id="seedId" />
+      <div class="grid2 compact">
+        <label>Légume ou plante<input id="seedName" required placeholder="Tomate, carotte, basilic…" list="seedNames" /></label>
+        <label>Variété<input id="seedVariety" placeholder="Marmande, Nantaise…" /></label>
+      </div>
+      <datalist id="seedNames"></datalist>
+      <div class="grid2 compact">
+        <label>Quantité disponible<input id="seedQuantity" type="number" min="0" step="1" value="1" required /></label>
+        <label>Unité<select id="seedUnit"><option>Sachet(s)</option><option>Graines estimées</option><option>Grammes</option><option>Portion(s)</option></select></label>
+      </div>
+      <div class="grid2 compact">
+        <label>Année d'achat ou de récolte<input id="seedYear" type="number" min="2000" max="2100" /></label>
+        <label>Origine<select id="seedOrigin"><option>Achetées</option><option>Récoltées au jardin</option><option>Données / échangées</option></select></label>
+      </div>
+      <div class="grid2 compact">
+        <label>Emplacement de rangement<input id="seedStorage" placeholder="Boîte 1, garage…" /></label>
+        <label>Seuil d'alerte<input id="seedLow" type="number" min="0" step="1" value="1" /></label>
+      </div>
+      <label>Photo du sachet (facultatif)<input id="seedPhoto" type="file" accept="image/*" /></label>
+      <label>Notes<textarea id="seedNotes" rows="3" placeholder="Date limite, provenance, réussite des semis…"></textarea></label>
+      <div class="modal-actions"><button type="button" id="deleteSeed" class="danger hidden">Supprimer</button><button type="button" class="secondary dialog-cancel">Annuler</button><button type="submit" value="default" class="primary">Enregistrer</button></div>
+    </form>
+  </dialog>
+
   <dialog id="installDialog">
     <div class="install-sheet">
       <div class="modal-head"><h3>Installer Mon Potager</h3><button type="button" class="icon dialog-close" aria-label="Fermer">✕</button></div>
@@ -234,6 +293,6 @@
       <div class="modal-actions"><button type="button" class="secondary dialog-cancel">Fermer</button><button type="button" id="nativeInstallBtn" class="primary">Installer maintenant</button></div>
     </div>
   </dialog>
-  <script src="./app.js?v=3.4"></script>
+  <script src="./app.js?v=3.5"></script>
 </body>
 </html>

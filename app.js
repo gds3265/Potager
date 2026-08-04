@@ -3,7 +3,7 @@ let state=load();
 let deferredPrompt;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 function load(){try{const old=JSON.parse(localStorage.getItem(KEY))||JSON.parse(localStorage.getItem('mon-potager-v2'))||JSON.parse(localStorage.getItem('mon-potager-v1'));return normalize(old)}catch{return normalize({})}}
-function normalize(x){return {crops:x?.crops||[],logs:x?.logs||[],water:x?.water||[],plots:x?.plots||[],settings:x?.settings||{gardenWidth:12,gardenHeight:8,planYear:new Date().getFullYear()}}}
+function normalize(x){return {crops:x?.crops||[],logs:x?.logs||[],water:x?.water||[],plots:x?.plots||[],seeds:x?.seeds||[],settings:{gardenWidth:12,gardenHeight:8,planYear:new Date().getFullYear(),climateZone:'southwest',...(x?.settings||{})}}}
 function save(){localStorage.setItem(KEY,JSON.stringify(state));renderAll()}
 function uid(){return crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)}
 function isoToday(){return new Date().toISOString().slice(0,10)}
@@ -11,7 +11,7 @@ function fmt(d){if(!d)return'—';return new Date(d+'T12:00:00').toLocaleDateStr
 function cropName(id){return state.crops.find(c=>c.id===id)?.name||'Culture supprimée'}
 function switchView(id){$$('.view').forEach(v=>v.classList.toggle('active',v.id===id));$$('.tab').forEach(t=>t.classList.toggle('active',t.dataset.view===id));window.scrollTo({top:0,behavior:'smooth'})}
 $$('.tab').forEach(t=>t.onclick=()=>switchView(t.dataset.view));$$('[data-go]').forEach(b=>b.onclick=()=>switchView(b.dataset.go));
-function renderAll(){renderStats();renderCrops();renderLogs();renderWater();renderYield();refreshSelects();renderPlan();renderAlerts();renderCompanionship();}
+function renderAll(){renderStats();renderCrops();renderSeeds();renderLogs();renderWater();renderYield();refreshSelects();renderPlan();renderAlerts();renderCompanionship();}
 function renderStats(){
  const totalYield=state.logs.filter(l=>l.type==='Récolte').reduce((s,l)=>s+(+l.weight||0),0);
  const month=new Date().toISOString().slice(0,7);const rain=state.water.filter(w=>w.type==='Pluie'&&w.date.startsWith(month)).reduce((s,w)=>s+(+w.amount||0),0);
@@ -35,8 +35,8 @@ function resetCrop(){$('#cropForm').reset();$('#cropId').value='';$('#cropDialog
 $('#cropForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return; e.preventDefault();const id=$('#cropId').value||uid();const c={id,name:$('#cropName').value.trim(),variety:$('#cropVariety').value.trim(),place:$('#cropPlace').value.trim(),qty:$('#cropQty').value,sow:$('#cropSow').value,plant:$('#cropPlant').value,expected:$('#cropExpected').value,status:$('#cropStatus').value,notes:$('#cropNotes').value.trim()};const i=state.crops.findIndex(x=>x.id===id);i>=0?state.crops[i]=c:state.crops.push(c);$('#cropDialog').close();save()});
 function refreshSelects(){const opts=state.crops.map(c=>`<option value="${c.id}">${esc(c.name)}${c.variety?' — '+esc(c.variety):''}</option>`).join('');$('#logCrop').innerHTML=opts||'<option value="">Crée d’abord une culture</option>';const current=$('#filterCrop').value;$('#filterCrop').innerHTML='<option value="">Toutes les cultures</option>'+opts;$('#filterCrop').value=current}
 $('#openLog').onclick=()=>{if(!state.crops.length){alert('Crée d’abord une culture.');switchView('cultures');return}$('#logForm').reset();$('#logDate').value=isoToday();toggleLogFields();$('#logDialog').showModal()};
-$('#logType').onchange=toggleLogFields;function toggleLogFields(){const t=$('#logType').value;$('#harvestFields').classList.toggle('hidden',t!=='Récolte');$('#treatmentFields').classList.toggle('hidden',t!=='Traitement')}
-$('#logForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();state.logs.push({id:uid(),cropId:$('#logCrop').value,type:$('#logType').value,date:$('#logDate').value,weight:$('#logWeight').value,count:$('#logCount').value,product:$('#logProduct').value.trim(),dose:$('#logDose').value.trim(),note:$('#logNote').value.trim()});$('#logDialog').close();save()});
+$('#logType').onchange=toggleLogFields;function toggleLogFields(){const t=$('#logType').value;$('#sowingFields').classList.toggle('hidden',t!=='Semis');$('#harvestFields').classList.toggle('hidden',t!=='Récolte');$('#treatmentFields').classList.toggle('hidden',t!=='Traitement');refreshSeedLogSelect()}
+$('#logForm').addEventListener('submit',e=>{if(e.submitter?.value==='cancel')return;e.preventDefault();const type=$('#logType').value,seedId=$('#logSeed').value,seedUsed=+$('#logSeedQty').value||0;state.logs.push({id:uid(),cropId:$('#logCrop').value,type,date:$('#logDate').value,weight:$('#logWeight').value,count:$('#logCount').value,product:$('#logProduct').value.trim(),dose:$('#logDose').value.trim(),note:$('#logNote').value.trim(),seedId,seedUsed});if(type==='Semis'&&seedId&&seedUsed>0){const lot=state.seeds.find(x=>x.id===seedId);if(lot)lot.quantity=Math.max(0,(+lot.quantity||0)-seedUsed)}$('#logDialog').close();save()});
 $('#filterType').onchange=renderLogs;$('#filterCrop').onchange=renderLogs;
 function renderLogs(){const type=$('#filterType').value,crop=$('#filterCrop').value;const arr=[...state.logs].filter(l=>(!type||l.type===type)&&(!crop||l.cropId===crop)).sort((a,b)=>b.date.localeCompare(a.date));$('#logList').innerHTML=arr.length?arr.map(l=>`<div class="timeline-item"><div class="timeline-date">${fmt(l.date)}</div><div><span class="pill">${esc(l.type)}</span><b>${esc(cropName(l.cropId))}</b><div class="meta">${l.type==='Récolte'?(l.weight?l.weight+' kg ':'')+(l.count?l.count+' unité(s) ':''):''}${l.type==='Traitement'?[l.product,l.dose].filter(Boolean).map(esc).join(' • '):''}${l.note?' • '+esc(l.note):''}</div></div><button class="delete-link" onclick="deleteLog('${l.id}')">Supprimer</button></div>`).join(''):'<div class="timeline-item empty">Aucune activité.</div>'}
 window.deleteLog=id=>{if(confirm('Supprimer cette activité ?')){state.logs=state.logs.filter(l=>l.id!==id);save()}}
@@ -46,7 +46,7 @@ function renderWater(){const month=new Date().toISOString().slice(0,7);const rai
 window.deleteWater=id=>{if(confirm('Supprimer cette mesure ?')){state.water=state.water.filter(w=>w.id!==id);save()}}
 function renderYield(){const rows=state.crops.map(c=>{const hs=state.logs.filter(l=>l.cropId===c.id&&l.type==='Récolte');return{name:c.name,kg:hs.reduce((s,l)=>s+(+l.weight||0),0),count:hs.reduce((s,l)=>s+(+l.count||0),0)}}).filter(r=>r.kg||r.count).sort((a,b)=>b.kg-a.kg);$('#yieldTable').innerHTML=rows.length?`<div class="yield-row header"><span>Culture</span><span>Poids</span><span>Quantité</span></div>`+rows.map(r=>`<div class="yield-row"><b>${esc(r.name)}</b><span>${r.kg.toFixed(2)} kg</span><span>${r.count||'—'}</span></div>`).join(''):'<p class="empty">Aucune récolte enregistrée pour le moment.</p>'}
 $('#exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`sauvegarde-potager-${isoToday()}.json`;a.click();URL.revokeObjectURL(a.href)};
-$('#importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!data.crops||!data.logs||!data.water)throw Error();state=data;save();alert('Sauvegarde importée.')}catch{alert('Fichier de sauvegarde non valide.')}e.target.value=''};
+$('#importFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());if(!data.crops||!data.logs||!data.water)throw Error();state=normalize(data);save();alert('Sauvegarde importée.')}catch{alert('Fichier de sauvegarde non valide.')}e.target.value=''};
 $('#resetBtn').onclick=()=>{if(confirm('Effacer définitivement toutes les données de ce potager ?')){state=normalize({});save()}};
 function esc(v=''){return String(v).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e});
@@ -207,4 +207,76 @@ window.addEventListener('resize',fitGardenPlan);
 window.addEventListener('orientationchange',()=>setTimeout(fitGardenPlan,150));
 window.visualViewport?.addEventListener('resize',fitGardenPlan);
 if('ResizeObserver' in window){new ResizeObserver(fitGardenPlan).observe($('#gardenPlan').parentElement)}
+
+// V3.5 — STOCK DE GRAINES ET CALENDRIER DE SEMIS
+const SEED_CALENDAR={
+ tomate:{indoor:[2,4],outdoor:[5,5],plant:[5,6],harvest:[7,10],life:4},
+ poivron:{indoor:[1,3],outdoor:null,plant:[5,6],harvest:[7,10],life:4},
+ aubergine:{indoor:[1,3],outdoor:null,plant:[5,6],harvest:[7,10],life:4},
+ carotte:{indoor:null,outdoor:[2,7],plant:null,harvest:[5,11],life:3},
+ poireau:{indoor:[1,4],outdoor:[3,5],plant:[5,7],harvest:[8,3],life:2},
+ oignon:{indoor:[1,3],outdoor:[2,4],plant:[3,5],harvest:[7,9],life:2},
+ ail:{indoor:null,outdoor:[10,3],plant:null,harvest:[6,8],life:2},
+ haricot:{indoor:null,outdoor:[4,7],plant:null,harvest:[6,10],life:3},
+ pois:{indoor:null,outdoor:[2,5],plant:null,harvest:[5,8],life:3},
+ courgette:{indoor:[3,5],outdoor:[5,6],plant:[5,6],harvest:[6,10],life:5},
+ concombre:{indoor:[3,5],outdoor:[5,6],plant:[5,6],harvest:[6,9],life:8},
+ courge:{indoor:[3,5],outdoor:[5,6],plant:[5,6],harvest:[8,11],life:5},
+ potiron:{indoor:[3,5],outdoor:[5,6],plant:[5,6],harvest:[9,11],life:5},
+ melon:{indoor:[2,4],outdoor:[5,5],plant:[5,6],harvest:[7,9],life:5},
+ salade:{indoor:[1,9],outdoor:[2,9],plant:[3,10],harvest:[4,11],life:5},
+ laitue:{indoor:[1,9],outdoor:[2,9],plant:[3,10],harvest:[4,11],life:5},
+ chou:{indoor:[1,6],outdoor:[3,7],plant:[4,8],harvest:[6,12],life:5},
+ radis:{indoor:null,outdoor:[2,10],plant:null,harvest:[3,11],life:5},
+ navet:{indoor:null,outdoor:[3,9],plant:null,harvest:[5,11],life:5},
+ betterave:{indoor:[2,4],outdoor:[3,7],plant:[4,6],harvest:[6,11],life:5},
+ epinard:{indoor:null,outdoor:[2,5],plant:null,harvest:[3,7],life:5},
+ fraise:{indoor:[1,3],outdoor:[4,6],plant:[3,10],harvest:[5,8],life:3},
+ basilic:{indoor:[2,5],outdoor:[5,6],plant:[5,6],harvest:[6,10],life:6},
+ persil:{indoor:[1,4],outdoor:[2,8],plant:[4,6],harvest:[5,12],life:3},
+ mais:{indoor:[3,4],outdoor:[4,6],plant:[5,6],harvest:[8,10],life:3},
+ celeri:{indoor:[1,4],outdoor:null,plant:[5,6],harvest:[8,11],life:5},
+ fenouil:{indoor:[2,4],outdoor:[4,7],plant:[5,7],harvest:[7,10],life:4},
+ panais:{indoor:null,outdoor:[2,6],plant:null,harvest:[9,3],life:2},
+ mache:{indoor:null,outdoor:[7,10],plant:null,harvest:[9,3],life:5},
+ roquette:{indoor:null,outdoor:[2,10],plant:null,harvest:[3,11],life:4},
+ coriandre:{indoor:[2,4],outdoor:[3,8],plant:[4,6],harvest:[5,10],life:3},
+ aneth:{indoor:[2,4],outdoor:[3,7],plant:[4,6],harvest:[5,9],life:3},
+ thym:{indoor:[2,5],outdoor:[4,6],plant:[5,7],harvest:[6,10],life:3},
+ tournesol:{indoor:[3,4],outdoor:[4,6],plant:[5,6],harvest:[8,10],life:5},
+ capucine:{indoor:[3,4],outdoor:[4,6],plant:[5,6],harvest:[6,10],life:5},
+ souci:{indoor:[2,4],outdoor:[3,6],plant:[4,6],harvest:[6,10],life:5}
+};
+const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+function seedKey(name=''){const n=normCrop(name);return Object.keys(SEED_CALENDAR).find(k=>n===normCrop(k)||n.includes(normCrop(k))||normCrop(k).includes(n))||''}
+function shiftedMonth(m,offset){return ((m-1+offset+120)%12)+1}
+function climateOffset(){return {southwest:-1,temperate:0,mountain:1,mediterranean:-1}[state.settings.climateZone]??0}
+function monthInRange(month,range,offset=0){if(!range)return false;let a=shiftedMonth(range[0],offset),b=shiftedMonth(range[1],offset);return a<=b?month>=a&&month<=b:month>=a||month<=b}
+function rangeText(range,offset=0){if(!range)return '—';const a=shiftedMonth(range[0],offset),b=shiftedMonth(range[1],offset);return a===b?MONTHS[a-1]:`${MONTHS[a-1]} → ${MONTHS[b-1]}`}
+function seedAgeStatus(seed){const key=seedKey(seed.name),life=key?SEED_CALENDAR[key].life:4,age=new Date().getFullYear()-(+seed.year||new Date().getFullYear());return age>life?'old':age===life?'check':'ok'}
+function seedPeriodStatus(seed){const key=seedKey(seed.name);if(!key)return {code:'unknown',label:'Période à renseigner'};const cal=SEED_CALENDAR[key],m=new Date().getMonth()+1,off=climateOffset();if(monthInRange(m,cal.indoor,off)||monthInRange(m,cal.outdoor,off))return {code:'now',label:'À semer maintenant'};for(let d=1;d<=2;d++){const future=((m-1+d)%12)+1;if(monthInRange(future,cal.indoor,off)||monthInRange(future,cal.outdoor,off))return {code:'soon',label:`À prévoir en ${MONTHS[future-1]}`}}return {code:'later',label:'À semer plus tard'}}
+function seedPhotoToData(file){return new Promise((resolve,reject)=>{if(!file){resolve('');return}const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file)})}
+function refreshSeedLogSelect(){const el=$('#logSeed');if(!el)return;const keep=el.value;el.innerHTML='<option value="">Non précisé</option>'+state.seeds.filter(s=>+s.quantity>0).map(s=>`<option value="${s.id}">${esc(s.name)}${s.variety?' — '+esc(s.variety):''} (${s.quantity} ${esc(s.unit)})</option>`).join('');el.value=keep}
+function renderSeeds(){
+ const box=$('#seedCards');if(!box)return;
+ $('#climateZone').value=state.settings.climateZone||'southwest';$('#seedMonthBadge').textContent=MONTHS[new Date().getMonth()];
+ const total=state.seeds.length,available=state.seeds.filter(s=>+s.quantity>0).length,now=state.seeds.filter(s=>+s.quantity>0&&seedPeriodStatus(s).code==='now').length,low=state.seeds.filter(s=>+s.quantity<=+(s.low||1)).length;
+ $('#seedSummary').innerHTML=[[total,'Sachets enregistrés','📦'],[available,'Disponibles','🌱'],[now,'À semer maintenant','🗓️'],[low,'Stock faible / vide','⚠️']].map(x=>`<div class="stat"><span>${x[2]}</span><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+ const sowable=state.seeds.filter(s=>+s.quantity>0&&['now','soon'].includes(seedPeriodStatus(s).code));
+ $('#seedNow').innerHTML=sowable.length?sowable.map(s=>{const st=seedPeriodStatus(s),key=seedKey(s.name),cal=key&&SEED_CALENDAR[key],off=climateOffset();return `<div class="seed-now-row"><div><b>${esc(s.name)}${s.variety?' — '+esc(s.variety):''}</b><span class="seed-status ${st.code}">${st.label}</span></div><small>${cal?`Sous abri : ${rangeText(cal.indoor,off)} • Pleine terre : ${rangeText(cal.outdoor,off)}`:'Calendrier non disponible'}</small></div>`}).join(''):'<p class="empty">Aucune graine disponible à semer maintenant ou dans les deux prochains mois.</p>';
+ const f=$('#seedFilter').value;let arr=[...state.seeds];if(f==='now')arr=arr.filter(s=>seedPeriodStatus(s).code==='now'&&+s.quantity>0);if(f==='soon')arr=arr.filter(s=>seedPeriodStatus(s).code==='soon'&&+s.quantity>0);if(f==='low')arr=arr.filter(s=>+s.quantity<=+(s.low||1));if(f==='old')arr=arr.filter(s=>['old','check'].includes(seedAgeStatus(s)));
+ box.innerHTML=arr.length?arr.map(s=>{const st=seedPeriodStatus(s),age=seedAgeStatus(s),key=seedKey(s.name),cal=key&&SEED_CALENDAR[key],off=climateOffset();return `<article class="crop-card seed-card">${s.photo?`<img src="${s.photo}" class="seed-photo" alt="Sachet de ${esc(s.name)}">`:''}<div class="crop-top"><div><h3>${esc(s.name)}</h3><div class="meta">${esc(s.variety||'Variété non précisée')}</div></div><span class="status ${st.code}">${st.label}</span></div><p><b>Stock :</b> ${s.quantity} ${esc(s.unit)} ${+s.quantity<=+(s.low||1)?'<span class="low-stock">⚠️ Faible</span>':''}<br><b>Année :</b> ${s.year||'—'} ${age==='old'?'<span class="low-stock">⚠️ ancien</span>':age==='check'?'<span class="check-stock">À vérifier</span>':''}<br><b>Rangement :</b> ${esc(s.storage||'Non précisé')}</p>${cal?`<div class="seed-calendar"><span><b>Sous abri</b>${rangeText(cal.indoor,off)}</span><span><b>Pleine terre</b>${rangeText(cal.outdoor,off)}</span><span><b>Plantation</b>${rangeText(cal.plant,off)}</span><span><b>Récolte</b>${rangeText(cal.harvest,off)}</span></div>`:'<p class="meta">Calendrier non disponible pour cette plante.</p>'}${s.notes?`<p class="meta">${esc(s.notes)}</p>`:''}<div class="seed-stock-actions"><button class="small" onclick="adjustSeed('${s.id}',-1)">− 1</button><button class="small" onclick="adjustSeed('${s.id}',1)">+ 1</button><button class="secondary" onclick="editSeed('${s.id}')">Modifier</button></div></article>`}).join(''):'<div class="card empty">Aucun sachet correspondant.</div>';
+ refreshSeedLogSelect();
+}
+function resetSeed(){const f=$('#seedForm');f.reset();$('#seedId').value='';$('#seedYear').value=new Date().getFullYear();$('#seedQuantity').value=1;$('#seedLow').value=1;$('#deleteSeed').classList.add('hidden');$('#seedDialog h3').textContent='Ajouter des graines'}
+$('#openSeed').onclick=()=>{resetSeed();$('#seedDialog').showModal()};
+$('#seedFilter').onchange=renderSeeds;
+$('#climateZone').onchange=e=>{state.settings.climateZone=e.target.value;save()};
+$('#seedForm').addEventListener('submit',async e=>{e.preventDefault();const id=$('#seedId').value||uid(),old=state.seeds.find(s=>s.id===id),file=$('#seedPhoto').files[0];let photo=old?.photo||'';if(file)photo=await seedPhotoToData(file);const seed={id,name:$('#seedName').value.trim(),variety:$('#seedVariety').value.trim(),quantity:+$('#seedQuantity').value||0,unit:$('#seedUnit').value,year:+$('#seedYear').value||'',origin:$('#seedOrigin').value,storage:$('#seedStorage').value.trim(),low:+$('#seedLow').value||0,notes:$('#seedNotes').value.trim(),photo};const i=state.seeds.findIndex(s=>s.id===id);i>=0?state.seeds[i]=seed:state.seeds.push(seed);$('#seedDialog').close();save()});
+window.editSeed=id=>{const s=state.seeds.find(x=>x.id===id);if(!s)return;$('#seedId').value=s.id;$('#seedName').value=s.name;$('#seedVariety').value=s.variety||'';$('#seedQuantity').value=s.quantity;$('#seedUnit').value=s.unit||'Sachet(s)';$('#seedYear').value=s.year||'';$('#seedOrigin').value=s.origin||'Achetées';$('#seedStorage').value=s.storage||'';$('#seedLow').value=s.low??1;$('#seedNotes').value=s.notes||'';$('#deleteSeed').classList.remove('hidden');$('#seedDialog h3').textContent='Modifier le sachet';$('#seedDialog').showModal()};
+window.adjustSeed=(id,delta)=>{const s=state.seeds.find(x=>x.id===id);if(s){s.quantity=Math.max(0,(+s.quantity||0)+delta);save()}};
+$('#deleteSeed').onclick=()=>{const id=$('#seedId').value;if(id&&confirm('Supprimer ce sachet du stock ?')){state.seeds=state.seeds.filter(s=>s.id!==id);$('#seedDialog').close();save()}};
+$('#seedNames').innerHTML=Object.keys(SEED_CALENDAR).map(k=>`<option value="${k.charAt(0).toUpperCase()+k.slice(1)}">`).join('');
+renderSeeds();
+
 renderAll();

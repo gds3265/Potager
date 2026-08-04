@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#e98b2a" />
+  <title>Mon Potager</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Carnet de jardin amateur</div>
+      <h1>🌻 Mon Potager</h1>
+    </div>
+    <button id="installBtn" class="ghost hidden">Installer</button>
+  </header>
+
+  <nav class="tabs" aria-label="Navigation principale">
+    <button class="tab active" data-view="dashboard">Accueil</button>
+    <button class="tab" data-view="plan">Plan du potager</button>
+    <button class="tab" data-view="cultures">Cultures</button>
+    <button class="tab" data-view="journal">Journal</button>
+    <button class="tab" data-view="meteo">Eau & pluie</button>
+    <button class="tab" data-view="bilan">Bilan</button>
+  </nav>
+
+  <main>
+    <section id="dashboard" class="view active">
+      <div class="hero card">
+        <div>
+          <span class="badge">Saison en cours</span>
+          <h2>Tout ton potager au même endroit</h2>
+          <p>Semis, plantations, récoltes, traitements, pluie et arrosage.</p>
+        </div>
+        <div class="sun">☀️</div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="grid2">
+        <div class="card">
+          <div class="section-title"><h3>À suivre</h3><button class="small" data-go="cultures">Ajouter</button></div>
+          <div id="upcoming" class="list empty">Aucune culture enregistrée.</div>
+        </div>
+        <div class="card">
+          <div class="section-title"><h3>Dernières activités</h3><button class="small" data-go="journal">Noter</button></div>
+          <div id="recent" class="list empty">Aucune activité enregistrée.</div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="plan" class="view">
+      <div class="section-head">
+        <div><span class="badge">Organisation visuelle</span><h2>Plan du potager</h2></div>
+        <button class="primary" id="openPlot">+ Ajouter une zone</button>
+      </div>
+      <div class="plan-tools card">
+        <label>Année <select id="planYear"></select></label>
+        <label>Largeur du plan (m)<input id="gardenWidth" type="number" min="2" max="50" step="1" value="12"></label>
+        <label>Hauteur du plan (m)<input id="gardenHeight" type="number" min="2" max="50" step="1" value="8"></label>
+        <button class="secondary" id="applyPlanSize">Appliquer les dimensions</button>
+      </div>
+      <p class="plan-help">Déplace les zones avec le doigt ou la souris. Appuie sur une zone pour la modifier ou lui affecter une culture.</p>
+      <div class="garden-wrap"><div id="gardenPlan" class="garden-plan" aria-label="Plan interactif du potager"></div></div>
+      <div class="legend card"><b>Légende :</b><span>☀️ Soleil</span><span>⛅ Mi-ombre</span><span>🌳 Ombre</span><span>💧 Point d’eau</span><span>🟫 Allée</span></div>
+    </section>
+
+    <section id="cultures" class="view">
+      <div class="section-head">
+        <div><span class="badge">Organisation</span><h2>Mes cultures</h2></div>
+        <button class="primary" id="openCrop">+ Nouvelle culture</button>
+      </div>
+      <div id="cropCards" class="cards"></div>
+    </section>
+
+    <section id="journal" class="view">
+      <div class="section-head">
+        <div><span class="badge">Historique</span><h2>Journal du potager</h2></div>
+        <button class="primary" id="openLog">+ Ajouter une activité</button>
+      </div>
+      <div class="filters">
+        <select id="filterType"><option value="">Toutes les activités</option><option>Semis</option><option>Plantation</option><option>Récolte</option><option>Traitement</option><option>Observation</option></select>
+        <select id="filterCrop"><option value="">Toutes les cultures</option></select>
+      </div>
+      <div id="logList" class="timeline"></div>
+    </section>
+
+    <section id="meteo" class="view">
+      <div class="section-head">
+        <div><span class="badge">Suivi de l'eau</span><h2>Pluie & arrosage</h2></div>
+        <button class="primary" id="openWater">+ Ajouter une mesure</button>
+      </div>
+      <div class="stats" id="waterStats"></div>
+      <div id="waterList" class="timeline"></div>
+    </section>
+
+    <section id="bilan" class="view">
+      <div class="section-head">
+        <div><span class="badge">Résultats</span><h2>Bilan de saison</h2></div>
+      </div>
+      <div class="card">
+        <h3>Rendements par culture</h3>
+        <div id="yieldTable"></div>
+      </div>
+      <div class="card backup">
+        <h3>Sauvegarde des données</h3>
+        <p>Les données restent sur cet appareil. Tu peux aussi conserver une copie.</p>
+        <div class="button-row">
+          <button id="exportBtn" class="secondary">Exporter la sauvegarde</button>
+          <label class="secondary file-label">Importer une sauvegarde<input id="importFile" type="file" accept="application/json" /></label>
+          <button id="resetBtn" class="danger">Tout effacer</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="cropDialog">
+    <form method="dialog" id="cropForm">
+      <div class="modal-head"><h3>Nouvelle culture</h3><button value="cancel" class="icon">✕</button></div>
+      <input type="hidden" id="cropId" />
+      <label>Nom de la culture<input id="cropName" required placeholder="Tomates, courgettes…" /></label>
+      <label>Variété<input id="cropVariety" placeholder="Cœur de bœuf, Black Beauty…" /></label>
+      <div class="grid2 compact">
+        <label>Emplacement<input id="cropPlace" placeholder="Carré 1, serre…" /></label>
+        <label>Quantité / nombre de plants<input id="cropQty" type="number" min="0" step="1" /></label>
+      </div>
+      <div class="grid2 compact">
+        <label>Date de semis<input id="cropSow" type="date" /></label>
+        <label>Date de plantation<input id="cropPlant" type="date" /></label>
+      </div>
+      <div class="grid2 compact">
+        <label>Début de récolte prévu<input id="cropExpected" type="date" /></label>
+        <label>Statut<select id="cropStatus"><option>Prévu</option><option>Semé</option><option>Planté</option><option>En production</option><option>Terminé</option></select></label>
+      </div>
+      <label>Notes<textarea id="cropNotes" rows="3" placeholder="Exposition, paillage, remarques…"></textarea></label>
+      <div class="modal-actions"><button value="cancel" class="secondary">Annuler</button><button type="submit" value="default" class="primary">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="logDialog">
+    <form method="dialog" id="logForm">
+      <div class="modal-head"><h3>Ajouter une activité</h3><button value="cancel" class="icon">✕</button></div>
+      <label>Culture<select id="logCrop" required></select></label>
+      <div class="grid2 compact">
+        <label>Type<select id="logType" required><option>Semis</option><option>Plantation</option><option>Récolte</option><option>Traitement</option><option>Observation</option></select></label>
+        <label>Date<input id="logDate" type="date" required /></label>
+      </div>
+      <div id="harvestFields" class="grid2 compact hidden">
+        <label>Poids récolté (kg)<input id="logWeight" type="number" min="0" step="0.01" /></label>
+        <label>Quantité récoltée<input id="logCount" type="number" min="0" step="1" /></label>
+      </div>
+      <div id="treatmentFields" class="hidden">
+        <label>Produit ou méthode<input id="logProduct" placeholder="Savon noir, purin d'ortie…" /></label>
+        <label>Dose / détail<input id="logDose" placeholder="Dosage et zone traitée" /></label>
+      </div>
+      <label>Commentaire<textarea id="logNote" rows="3" placeholder="Ce qui a été fait ou observé…"></textarea></label>
+      <div class="modal-actions"><button value="cancel" class="secondary">Annuler</button><button type="submit" value="default" class="primary">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="waterDialog">
+    <form method="dialog" id="waterForm">
+      <div class="modal-head"><h3>Pluie ou arrosage</h3><button value="cancel" class="icon">✕</button></div>
+      <div class="grid2 compact">
+        <label>Type<select id="waterType"><option>Pluie</option><option>Arrosage</option></select></label>
+        <label>Date<input id="waterDate" type="date" required /></label>
+      </div>
+      <div class="grid2 compact">
+        <label>Quantité (mm ou L/m²)<input id="waterAmount" type="number" min="0" step="0.1" required /></label>
+        <label>Zone concernée<input id="waterArea" placeholder="Tout le potager, serre…" /></label>
+      </div>
+      <label>Commentaire<textarea id="waterNote" rows="3"></textarea></label>
+      <div class="modal-actions"><button value="cancel" class="secondary">Annuler</button><button type="submit" value="default" class="primary">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+
+  <dialog id="plotDialog">
+    <form method="dialog" id="plotForm">
+      <div class="modal-head"><h3>Zone du potager</h3><button value="cancel" class="icon">✕</button></div>
+      <input type="hidden" id="plotId" />
+      <label>Nom de la zone<input id="plotName" required placeholder="Planche tomates, carré 1, serre…" /></label>
+      <div class="grid2 compact">
+        <label>Type<select id="plotType"><option>Parcelle</option><option>Serre</option><option>Allée</option><option>Compost</option><option>Point d’eau</option><option>Arbre fruitier</option></select></label>
+        <label>Exposition<select id="plotSun"><option>Soleil</option><option>Mi-ombre</option><option>Ombre</option></select></label>
+      </div>
+      <label>Culture affectée<select id="plotCrop"><option value="">Aucune culture</option></select></label>
+      <div class="grid2 compact">
+        <label>Largeur (m)<input id="plotW" type="number" min="0.5" max="20" step="0.5" value="2"></label>
+        <label>Longueur (m)<input id="plotH" type="number" min="0.5" max="20" step="0.5" value="2"></label>
+      </div>
+      <label>Note<textarea id="plotNote" rows="2" placeholder="Paillage, contraintes, succession prévue…"></textarea></label>
+      <div class="modal-actions"><button type="button" id="deletePlot" class="danger hidden">Supprimer</button><button value="cancel" class="secondary">Annuler</button><button type="submit" value="default" class="primary">Enregistrer</button></div>
+    </form>
+  </dialog>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -8,19 +8,19 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Mon Potager" />
-  <title>Mon Potager V3.5</title>
+  <title>Mon Potager V3.6</title>
   <link rel="icon" href="./favicon.ico" sizes="any" />
   <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png" />
   <link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./styles.css?v=3.5" />
+  <link rel="stylesheet" href="./styles.css?v=3.6" />
 </head>
 <body>
   <header class="topbar">
     <div>
       <div class="eyebrow">Carnet de jardin amateur</div>
-      <h1><img src="icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.5</small></h1>
+      <h1><img src="icon-192.png" class="app-logo" alt="" /> Mon Potager <small class="version">V3.6</small></h1>
     </div>
     <button id="installBtn" class="ghost install-main">📲 Installer</button>
   </header>
@@ -30,6 +30,7 @@
     <button class="tab" data-view="plan">Plan du potager</button>
     <button class="tab" data-view="cultures">Cultures</button>
     <button class="tab" data-view="seeds">Graines</button>
+    <button class="tab" data-view="library">Bibliothèque</button>
     <button class="tab" data-view="journal">Journal</button>
     <button class="tab" data-view="meteo">Eau & pluie</button>
     <button class="tab" data-view="bilan">Bilan</button>
@@ -121,6 +122,26 @@
       <div id="seedCards" class="cards"></div>
     </section>
 
+
+    <section id="library" class="view">
+      <div class="section-head">
+        <div><span class="badge">Conseils hors connexion</span><h2>Bibliothèque du potager</h2></div>
+        <button class="secondary" id="showFavorites">⭐ Mes favoris</button>
+      </div>
+      <div class="card library-tools">
+        <label class="library-search">🔎 Rechercher
+          <input id="librarySearch" type="search" placeholder="Tomate, mildiou, feuilles jaunes, limaces…" />
+        </label>
+        <label>Catégorie
+          <select id="libraryCategory">
+            <option value="">Tout</option><option value="culture">Cultures</option><option value="disease">Maladies</option><option value="pest">Ravageurs</option><option value="deficiency">Carences</option>
+          </select>
+        </label>
+      </div>
+      <div class="library-summary" id="librarySummary"></div>
+      <div id="libraryCards" class="library-grid"></div>
+    </section>
+
     <section id="journal" class="view">
       <div class="section-head">
         <div><span class="badge">Historique</span><h2>Journal du potager</h2></div>
@@ -161,6 +182,15 @@
       </div>
     </section>
   </main>
+
+
+  <dialog id="libraryDialog" class="library-dialog">
+    <div class="library-detail">
+      <div class="modal-head"><h3 id="libraryDialogTitle">Fiche</h3><button type="button" class="icon dialog-close" aria-label="Fermer">✕</button></div>
+      <div id="libraryDialogBody"></div>
+      <div class="modal-actions"><button type="button" class="secondary dialog-cancel">Fermer</button></div>
+    </div>
+  </dialog>
 
   <dialog id="cropDialog">
     <form method="dialog" id="cropForm">

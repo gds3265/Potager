@@ -1,19 +1,37 @@
 {
   "id": "./",
-  "name": "Mon Potager",
-  "short_name": "Potager",
+  "name": "Mon Potager V3.6",
+  "short_name": "Mon Potager",
   "description": "Carnet de potager : cultures, plan, pluie, arrosage, récoltes et alertes.",
   "lang": "fr-FR",
   "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "standalone",
+    "minimal-ui"
+  ],
   "orientation": "any",
   "background_color": "#fffaf0",
   "theme_color": "#e98b2a",
   "icons": [
-    {"src":"./icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},
-    {"src":"./icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"},
-    {"src":"./icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}
+    {
+      "src": "./icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

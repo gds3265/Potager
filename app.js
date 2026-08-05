@@ -301,3 +301,10 @@ $('#libraryCategory')?.addEventListener('change',()=>{libraryFavoritesOnly=false
 $('#showFavorites')?.addEventListener('click',()=>{libraryFavoritesOnly=!libraryFavoritesOnly;$('#showFavorites').textContent=libraryFavoritesOnly?'📚 Voir toutes les fiches':'⭐ Mes favoris';renderLibrary()});
 
 renderAll();
+
+// V3.6.1 — garde l’onglet actif entièrement visible dans le bandeau mobile.
+document.addEventListener('click', (event) => {
+  const tab = event.target.closest('.tab');
+  if (!tab) return;
+  window.setTimeout(() => tab.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}), 20);
+});
